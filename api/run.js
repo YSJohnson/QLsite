@@ -40,10 +40,9 @@ module.exports = async function handler(req, res) {
 
     const token = tokenData.data.token;
 
-    // 触发任务
-    console.log("Triggering task at:", `${QL_HOST}/open/crons/run`);
-    console.log("With TASK_ID:", TASK_ID);
-    const runRes = await fetch(`${QL_HOST}/open/crons/run`, {
+    // 触发任务：注意加上 /qinglong 前缀
+    const API_PREFIX = '/qinglong';
+    const runRes = await fetch(`${QL_HOST}${API_PREFIX}/open/crons/run`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -53,7 +52,7 @@ module.exports = async function handler(req, res) {
     });
 
     if (!runRes.ok) {
-      const errText = await runRes.text(); // ✅ 这里已修正！
+      const errText = await runRes.text();
       console.error("Run task failed:", errText);
       return res.status(500).json({ error: "Failed to trigger script", details: errText });
     }
@@ -64,4 +63,3 @@ module.exports = async function handler(req, res) {
     res.status(500).json({ error: "Internal server error", message: error.message });
   }
 };
-
