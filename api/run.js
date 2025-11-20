@@ -43,7 +43,7 @@ module.exports = async function handler(req, res) {
     // 触发任务：注意加上 /qinglong 前缀
     const API_PREFIX = '/qinglong';
     const runRes = await fetch(`${QL_HOST}${API_PREFIX}/open/crons/run`, {
-      method: 'POST',
+      method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -63,3 +63,4 @@ module.exports = async function handler(req, res) {
     res.status(500).json({ error: "Internal server error", message: error.message });
   }
 };
+
