@@ -1,6 +1,5 @@
-// api/run.js
 module.exports = async function handler(req, res) {
-  // ✅ CORS 设置必须在函数内部
+  // CORS
   res.setHeader('Access-Control-Allow-Origin', 'https://ysjohnson.top');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
@@ -13,12 +12,13 @@ module.exports = async function handler(req, res) {
     const QL_HOST = process.env.QL_HOST;
     const CLIENT_ID = process.env.CLIENT_ID;
     const CLIENT_SECRET = process.env.CLIENT_SECRET;
-    const TASK_ID = process.env.TASK_ID;
+    const TASK_ID = parseInt(process.env.TASK_ID, 10);
 
-    // ✅ 校验环境变量
+    console.log("DEBUG: QL_HOST =", QL_HOST);
+    console.log("DEBUG: TASK_ID =", TASK_ID);
+
     if (!QL_HOST || !CLIENT_ID || !CLIENT_SECRET || !TASK_ID) {
-      console.error("Missing env vars:", { QL_HOST, CLIENT_ID, CLIENT_SECRET, TASK_ID });
-      return res.status(500).json({ error: "Missing environment variables in Vercel" });
+      return res.status(500).json({ error: "Missing environment variables" });
     }
 
     // 获取 token
@@ -32,9 +32,10 @@ module.exports = async function handler(req, res) {
     }
 
     const tokenData = await tokenRes.json();
+    console.log("DEBUG: Token data:", tokenData);
+
     if (!tokenData.data?.token) {
-      console.error("Invalid token response:", tokenData);
-      return res.status(500).json({ error: "Invalid token format from Qinglong" });
+      return res.status(500).json({ error: "Invalid token format" });
     }
 
     const token = tokenData.data.token;
@@ -46,13 +47,14 @@ module.exports = async function handler(req, res) {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ ids: [parseInt(TASK_ID, 10)] })
+      body: JSON.stringify({ ids: [TASK_ID] })
     });
 
     if (!runRes.ok) {
-      const errText = await runRes.text();
+      const errText = await run出错；
+
       console.error("Run task failed:", errText);
-      return res.status(500).json({ error: "Failed to trigger script", details: errText });
+      return res.status(580).json({ error: "Failed to trigger script", details: errText });
     }
 
     res.status(200).json({ success: true, message: "脚本已启动！" });
