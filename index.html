@@ -1,44 +1,194 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <title>一键运行脚本</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>青龙任务控制台</title>
   <style>
-    body { font-family: Arial; text-align: center; padding: 50px; }
-    button { padding: 12px 24px; font-size: 18px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; }
-    button:hover { background: #45a049; }
-    #result { margin-top: 20px; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      color: white;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      max-width: 800px;
+      width: 100%;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      margin-bottom: 2.5rem;
+      text-shadow: 0 0 10px rgba(173, 122, 255, 0.6);
+      background: linear-gradient(to right, #a683e3, #7a5de0, #4a3dc7);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      font-weight: 700;
+    }
+
+    .buttons-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+
+    .task-btn {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(138, 90, 255, 0.4);
+      border-radius: 16px;
+      padding: 1.4rem 1rem;
+      color: white;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .task-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.6s;
+    }
+
+    .task-btn:hover {
+      background: rgba(138, 90, 255, 0.2);
+      transform: translateY(-4px);
+      box-shadow: 0 6px 16px rgba(138, 90, 255, 0.4);
+    }
+
+    .task-btn:hover::before {
+      left: 100%;
+    }
+
+    .task-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .status {
+      margin-top: 2rem;
+      min-height: 2rem;
+      font-size: 1.1rem;
+      font-weight: 500;
+    }
+
+    .status.success {
+      color: #6ee7b7;
+    }
+
+    .status.error {
+      color: #fca5a5;
+    }
+
+    footer {
+      margin-top: 3rem;
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 1.8rem;
+      }
+      .buttons-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
-  <h1>🚀 一键运行签到脚本</h1>
-  <button onclick="runScript()">立即运行</button>
-  <div id="result"></div>
+  <div class="container">
+    <h1>🤖 青龙自动化控制台</h1>
+
+    <div class="buttons-grid">
+      <button class="task-btn" data-task-id="40">运行恰恰阅读</button>
+      <button class="task-btn" data-task-id="0">未设置</button>
+      <button class="task-btn" data-task-id="0">未设置</button>
+      <button class="task-btn" data-task-id="0">未设置</button>
+      <button class="task-btn" data-task-id="41">测试脚本</button>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <footer>
+      Powered by QingLong + Vercel • 点击按钮即可远程触发脚本
+    </footer>
+  </div>
 
   <script>
-    async function runScript() {
-      const btn = document.querySelector('button');
-      btn.disabled = true;
-      btn.textContent = '运行中...';
-      document.getElementById('result').innerText = '';
+    // 🔧 替换为你自己的 Vercel API 地址
+    const API_BASE = "https://your-vercel-app.vercel.app/api/run";
 
-      try {
-        // 调用你的 Vercel 函数
-        const response = await fetch('https://qlsite.vercel.app/api/run');
-        const data = await response.json();
-        
-        if (data.success) {
-          document.getElementById('result').innerHTML = '<span style="color:green">✅ ' + data.message + '</span>';
-        } else {
-          document.getElementById('result').innerHTML = '<span style="color:red">❌ ' + data.message + '</span>';
-        }
-      } catch (err) {
-        document.getElementById('result').innerHTML = '<span style="color:red">⚠️ 请求失败：' + err.message + '</span>';
-      } finally {
-        btn.disabled = false;
-        btn.textContent = '立即运行';
-      }
+    const buttons = document.querySelectorAll('.task-btn');
+    const statusEl = document.getElementById('status');
+
+    function showStatus(message, type = 'info') {
+      statusEl.textContent = message;
+      statusEl.className = `status ${type}`;
+      setTimeout(() => {
+        if (statusEl.textContent === message) statusEl.textContent = '';
+      }, 5000);
     }
+
+    buttons.forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const taskId = btn.getAttribute('data-task-id');
+        if (!taskId || taskId === '0') {
+          showStatus('该任务尚未配置，请先设置 TASK_ID', 'error');
+          return;
+        }
+
+        // 更新按钮状态
+        const originalText = btn.textContent;
+        btn.textContent = '执行中...';
+        btn.disabled = true;
+
+        try {
+          const res = await fetch(API_BASE, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ taskId }) // 如果你的 API 接收 POST body
+          });
+
+          const data = await res.json();
+          if (res.ok && data.success) {
+            showStatus(`✅ ${originalText} 已启动！`, 'success');
+          } else {
+            showStatus(`❌ 失败：${data.error || '未知错误'}`, 'error');
+          }
+        } catch (err) {
+          console.error(err);
+          showStatus('⚠️ 网络错误，请检查控制台', 'error');
+        } finally {
+          btn.textContent = originalText;
+          btn.disabled = false;
+        }
+      });
+    });
   </script>
 </body>
 </html>
