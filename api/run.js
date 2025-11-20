@@ -1,9 +1,9 @@
-// api/run.js
-
-module.exports = async function handler(req, res) {
-  // CORS 设置（允许你的域名）
-  res.setHeader('Access-Control-Allow-Origin', 'https://ysjohnson.top'); // 或 '*' 测试用
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+// api/run.js —— 部署到 Vercel
+export default async function handler(req, res) {
+  // 🔐 允许你的 GitHub Pages 域名（改成你的！）
+  const allowedOrigin = 'https://ysjohnson.top';
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
@@ -18,51 +18,37 @@ module.exports = async function handler(req, res) {
   try {
     body = JSON.parse(req.body);
   } catch (e) {
-    return res.status(400).json({ error: 'Invalid JSON body' });
+    return res.status(400).json({ error: 'Invalid JSON' });
   }
 
   const { taskId } = body;
+  const TASK_ID_NUM = Number(taskId);
 
-  // 🔒 可选：白名单校验（推荐！）
-  const ALLOWED_TASK_IDS = [41, 42, 43, 44, 40]; // ← 把你允许的脚本 ID 写在这里
-  const TASK_ID_NUM = parseInt(taskId, 10);
-
-  if (!taskId || isNaN(TASK_ID_NUM) || !ALLOWED_TASK_IDS.includes(TASK_ID_NUM)) {
+  // 🔒 白名单：只允许这些任务 ID（改成你的！）
+  const ALLOWED_IDS = [40,41, 42, 43, 44];
+  if (!taskId || isNaN(TASK_ID_NUM) || !ALLOWED_IDS.includes(TASK_ID_NUM)) {
     return res.status(400).json({ error: 'Invalid or unauthorized task ID' });
   }
 
+  // 🌐 从环境变量读取青龙信息
+  const QL_HOST = process.env.QL_HOST;
+  const CLIENT_ID = process.env.CLIENT_ID;
+  const CLIENT_SECRET = process.env.CLIENT_SECRET;
+
+  if (!QL_HOST || !CLIENT_ID || !CLIENT_SECRET) {
+    return res.status(500).json({ error: 'Missing env vars in Vercel' });
+  }
+
   try {
-    const QL_HOST = process.env.QL_HOST;
-    const CLIENT_ID = process.env.CLIENT_ID;
-    const CLIENT_SECRET = process.env.CLIENT_SECRET;
-
-    if (!QL_HOST || !CLIENT_ID || !CLIENT_SECRET) {
-      return res.status(500).json({ error: 'Missing environment variables' });
-    }
-
-    // Step 1: 获取 token
-    const tokenUrl = `${QL_HOST}/open/auth/token?client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}`;
-    const tokenRes = await fetch(tokenUrl, { method: 'GET' });
-
-    const tokenText = await tokenRes.text();
-    if (!tokenRes.ok) {
-      console.error('Token fetch failed:', tokenText);
-      return res.status(500).json({ error: 'Failed to get QingLong token', details: tokenText });
-    }
-
-    let tokenData;
-    try {
-      tokenData = JSON.parse(tokenText);
-    } catch (e) {
-      return res.status(500).json({ error: 'Invalid token response format' });
-    }
-
+    // 1️⃣ 获取 token
+    const tokenRes = await fetch(
+      `${QL_HOST}/open/auth/token?client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}`
+    );
+    const tokenData = await tokenRes.json();
     const token = tokenData?.data?.token;
-    if (!token) {
-      return res.status(500).json({ error: 'Token not found in response' });
-    }
+    if (!token) throw new Error('Token missing');
 
-    // Step 2: 触发任务（新版青龙：PUT + [id]）
+    // 2️⃣ 触发任务（新版青龙：PUT + [id]）
     const runRes = await fetch(`${QL_HOST}/open/crons/run`, {
       method: 'PUT',
       headers: {
@@ -72,17 +58,12 @@ module.exports = async function handler(req, res) {
       body: JSON.stringify([TASK_ID_NUM]) // 注意：是数组！
     });
 
-    const runBody = await runRes.text();
-    if (!runRes.ok) {
-      console.error('Run task failed:', runBody);
-      return res.status(500).json({ error: 'Failed to trigger script', details: runBody });
-    }
+    const runData = await runRes.text();
+    if (!runRes.ok) throw new Error(`Run failed: ${runData}`);
 
-    // 成功！
-    res.status(200).json({ success: true, message: `Task ${TASK_ID_NUM} triggered!` });
-
-  } catch (error) {
-    console.error('💥 Server error:', error.message);
-    res.status(500).json({ error: 'Internal server error', message: error.message });
+    res.status(200).json({ success: true, message: `Task ${TASK_ID_NUM} started!` });
+  } catch (err) {
+    console.error('❌ Error:', err.message);
+    res.status(500).json({ error: 'Server error', details: err.message });
   }
-};
+}
