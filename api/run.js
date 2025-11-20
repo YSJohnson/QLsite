@@ -40,15 +40,14 @@ module.exports = async function handler(req, res) {
 
     const token = tokenData.data.token;
 
-    // 触发任务：注意加上 /qinglong 前缀
-    const API_PREFIX = '/qinglong';
-    const runRes = await fetch(`${QL_HOST}${API_PREFIX}/open/crons/run`, {
+    // 触发任务：使用 GET 请求 + URL 参数
+    const API_PREFIX = '/qinglong'; // 如果有前缀
+    const runRes = await fetch(`${QL_HOST}${API_PREFIX}/open/crons/run?id=${TASK_ID}`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ ids: [TASK_ID] })
+      }
     });
 
     if (!runRes.ok) {
@@ -63,4 +62,3 @@ module.exports = async function handler(req, res) {
     res.status(500).json({ error: "Internal server error", message: error.message });
   }
 };
-
