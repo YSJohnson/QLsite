@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>一键运行脚本</title>
+  <style>
+    body { font-family: Arial; text-align: center; padding: 50px; }
+    button { padding: 12px 24px; font-size: 18px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    button:hover { background: #45a049; }
+    #result { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>🚀 一键运行签到脚本</h1>
+  <button onclick="runScript()">立即运行</button>
+  <div id="result"></div>
+
+  <script>
+    async function runScript() {
+      const btn = document.querySelector('button');
+      btn.disabled = true;
+      btn.textContent = '运行中...';
+      document.getElementById('result').innerText = '';
+
+      try {
+        // 调用你的 Vercel 函数
+        const response = await fetch('https://my-ql-api-proxy.vercel.app/api/run');
+        const data = await response.json();
+        
+        if (data.success) {
+          document.getElementById('result').innerHTML = '<span style="color:green">✅ ' + data.message + '</span>';
+        } else {
+          document.getElementById('result').innerHTML = '<span style="color:red">❌ ' + data.message + '</span>';
+        }
+      } catch (err) {
+        document.getElementById('result').innerHTML = '<span style="color:red">⚠️ 请求失败：' + err.message + '</span>';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '立即运行';
+      }
+    }
+  </script>
+</body>
+</html>
