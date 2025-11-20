@@ -51,10 +51,9 @@ module.exports = async function handler(req, res) {
     });
 
     if (!runRes.ok) {
-      const errText = await run出错；
-
+      const errText = await runRes.text(); // ✅ 这里已修正！
       console.error("Run task failed:", errText);
-      return res.status(580).json({ error: "Failed to trigger script", details: errText });
+      return res.status(500).json({ error: "Failed to trigger script", details: errText });
     }
 
     res.status(200).json({ success: true, message: "脚本已启动！" });
