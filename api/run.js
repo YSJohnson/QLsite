@@ -1,6 +1,15 @@
 module.exports = async function handler(req, res) {
-  // CORS
-  res.setHeader('Access-Control-Allow-Origin', 'https://ysjohnson.top');
+  const ALLOWED_ORIGINS = [
+  'https://ysjohnson.top',
+  'https://ysjohnson.github.io',
+  'https://ql.ysjohnson.top'
+  'https://qlsite.vercel.app'
+  ];
+
+  const origin = req.headers.origin;
+  if (ALLOWED_ORIGINS.includes(origin)) {
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
 
@@ -77,3 +86,4 @@ module.exports = async function handler(req, res) {
     res.status(500).json({ error: "Internal server error", message: error.message });
   }
 };
+
