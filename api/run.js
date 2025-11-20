@@ -1,5 +1,5 @@
 // api/run.js
-module，exports = async function handler(req， res) {
+module.exports = async function handler(req, res) {
   // ✅ CORS 设置必须在函数内部
   res.setHeader('Access-Control-Allow-Origin', 'https://ysjohnson.top');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -27,13 +27,13 @@ module，exports = async function handler(req， res) {
 
     if (!tokenRes.ok) {
       const text = await tokenRes.text();
-      console.error("Token fetch failed:"， text);
+      console.error("Token fetch failed:", text);
       return res.status(500).json({ error: "Failed to get Qinglong token", details: text });
     }
 
     const tokenData = await tokenRes.json();
     if (!tokenData.data?.token) {
-      console.error("Invalid token response:"， tokenData);
+      console.error("Invalid token response:", tokenData);
       return res.status(500).json({ error: "Invalid token format from Qinglong" });
     }
 
