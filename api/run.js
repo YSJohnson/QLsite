@@ -41,7 +41,6 @@ module.exports = async function handler(req, res) {
     const token = tokenData.data.token;
 
     // 触发任务：使用 GET 请求 + URL 参数
-    const API_PREFIX = '/qinglong'; // 如果有前缀
     console.log("Triggering task at:", `${QL_HOST}${API_PREFIX}/open/crons/run?id=${TASK_ID}`);
     const runRes = await fetch(`${QL_HOST}${API_PREFIX}/open/crons/run?id=${TASK_ID}`, {
       method: 'GET',
@@ -65,4 +64,5 @@ module.exports = async function handler(req, res) {
     res.status(500).json({ error: "Internal server error", message: error.message });
   }
 };
+
 
