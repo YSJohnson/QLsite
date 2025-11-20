@@ -5,184 +5,112 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>青龙控制台</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-    }
-
+    * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
     body {
-      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
       color: white;
       min-height: 100vh;
-      padding: 2rem 1rem;
       display: flex;
       flex-direction: column;
       align-items: center;
+      padding: 2rem 1rem;
     }
-
-    .container {
-      max-width: 800px;
-      width: 100%;
-      text-align: center;
-    }
-
+    .container { max-width: 800px; width: 100%; text-align: center; }
     h1 {
-      font-size: 2.2rem;
-      margin-bottom: 2.5rem;
-      text-shadow: 0 0 10px rgba(173, 122, 255, 0.6);
-      background: linear-gradient(to right, #a683e3, #7a5de0, #4a3dc7);
+      font-size: 2rem;
+      margin-bottom: 2rem;
+      background: linear-gradient(to right, #a18cd1, #fbc2eb);
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
-      font-weight: 700;
     }
-
-    .buttons-grid {
+    .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 1.5rem;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1.2rem;
       margin-top: 1rem;
     }
-
-    .task-btn {
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(138, 90, 255, 0.4);
-      border-radius: 16px;
-      padding: 1.4rem 1rem;
+    .btn {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(174, 129, 255, 0.4);
       color: white;
+      padding: 1.2rem 0.8rem;
+      border-radius: 12px;
       font-size: 1.1rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-      position: relative;
-      overflow: hidden;
+      transition: all 0.2s;
     }
-
-    .task-btn::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-      transition: left 0.6s;
+    .btn:hover:not(:disabled) {
+      background: rgba(174, 129, 255, 0.2);
+      transform: translateY(-2px);
     }
-
-    .task-btn:hover {
-      background: rgba(138, 90, 255, 0.2);
-      transform: translateY(-4px);
-      box-shadow: 0 6px 16px rgba(138, 90, 255, 0.4);
-    }
-
-    .task-btn:hover::before {
-      left: 100%;
-    }
-
-    .task-btn:disabled {
+    .btn:disabled {
       opacity: 0.6;
       cursor: not-allowed;
-      transform: none;
     }
-
-    .status {
+    #status {
       margin-top: 2rem;
-      min-height: 2rem;
+      min-height: 1.5rem;
       font-size: 1.1rem;
-      font-weight: 500;
     }
-
-    .status.success {
-      color: #6ee7b7;
-    }
-
-    .status.error {
-      color: #fca5a5;
-    }
-
-    footer {
-      margin-top: 3rem;
-      font-size: 0.9rem;
-      color: rgba(255, 255, 255, 0.6);
-    }
-
-    @media (max-width: 600px) {
-      h1 {
-        font-size: 1.8rem;
-      }
-      .buttons-grid {
-        grid-template-columns: 1fr;
-      }
-    }
+    .success { color: #6ee7b7; }
+    .error { color: #fca5a5; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🤖 青龙自动化控制台</h1>
-
-    <div class="buttons-grid">
-      <button class="task-btn" data-task-id="40">运行恰恰阅读</button>
-      <button class="task-btn" data-task-id="0">未设置</button>
-      <button class="task-btn" data-task-id="0">未设置</button>
-      <button class="task-btn" data-task-id="0">未设置</button>
-      <button class="task-btn" data-task-id="41">测试脚本</button>
+    <h1>🚀 青龙自动化控制台</h1>
+    <div class="grid">
+      <button class="btn" data-id="40">运行恰恰阅读</button>
+      <button class="btn" data-id="0">未设置</button>
+      <button class="btn" data-id="0">未设置</button>
+      <button class="btn" data-id="0">未设置</button>
+      <button class="btn" data-id="41">运行测试脚本</button>
     </div>
-
-    <div class="status" id="status"></div>
-
-    <footer>
-      Powered by QingLong + Vercel • 点击按钮即可远程触发脚本
-    </footer>
+    <div id="status"></div>
   </div>
 
   <script>
-    // 🔧 替换为你自己的 Vercel API 地址
-    const API_BASE = "https://qlsite.vercel.app/api/run";
+    // 🔥 替换成你的 Vercel API 地址！
+    const API_URL = "https://qlsite.vercel.app/api/run"; // ← 改这里！
 
-    const buttons = document.querySelectorAll('.task-btn');
+    const buttons = document.querySelectorAll('.btn');
     const statusEl = document.getElementById('status');
 
-    function showStatus(message, type = 'info') {
-      statusEl.textContent = message;
-      statusEl.className = `status ${type}`;
+    function setStatus(msg, type) {
+      statusEl.textContent = msg;
+      statusEl.className = type;
       setTimeout(() => {
-        if (statusEl.textContent === message) statusEl.textContent = '';
+        if (statusEl.textContent === msg) statusEl.textContent = '';
       }, 5000);
     }
 
     buttons.forEach(btn => {
       btn.addEventListener('click', async () => {
-        const taskId = btn.getAttribute('data-task-id');
-        if (!taskId || taskId === '0') {
-          showStatus('该任务尚未配置，请先设置 TASK_ID', 'error');
-          return;
-        }
+        const id = btn.dataset.id;
+        if (id === '0') return setStatus('该任务未配置', 'error');
 
-        // 更新按钮状态
         const originalText = btn.textContent;
         btn.textContent = '执行中...';
         btn.disabled = true;
 
         try {
-          const res = await fetch(API_BASE, {
+          const res = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ taskId }) // 如果你的 API 接收 POST body
+            body: JSON.stringify({ taskId: id })
           });
 
           const data = await res.json();
           if (res.ok && data.success) {
-            showStatus(`✅ ${originalText} 已启动！`, 'success');
+            setStatus(`✅ ${originalText} 已启动！`, 'success');
           } else {
-            showStatus(`❌ 失败：${data.error || '未知错误'}`, 'error');
+            setStatus(`❌ 失败：${data.error || '未知错误'}`, 'error');
           }
         } catch (err) {
-          console.error(err);
-          showStatus('⚠️ 网络错误，请检查控制台', 'error');
+          setStatus('⚠️ 网络错误，请检查控制台', 'error');
+          console.error('Fetch error:', err);
         } finally {
           btn.textContent = originalText;
           btn.disabled = false;
