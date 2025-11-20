@@ -41,8 +41,9 @@ module.exports = async function handler(req, res) {
 
     const token = tokenData.data.token;
 
-    // 触发任务
-    const runRes = await fetch(`${QL_HOST}/open/crons/run?id=${TASK_ID}`, {
+    // 触发任务：使用 URLSearchParams 确保参数正确
+    const params = new URLSearchParams({ id: TASK_ID });
+    const runRes = await fetch(`${QL_HOST}/open/crons/run?${params}`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -54,9 +55,9 @@ module.exports = async function handler(req, res) {
     console.log("Run response text:", await runRes.text());
 
     if (!runRes.ok) {
-      const errText = await runRes.text(); // ← 确保这是个变量
+      const errText = await runRes.text();
       console.error("Run task failed:", errText);
-      return res.status(500).json({ error: "Failed to trigger script", details: errText }); // ← 修正这里！
+      return res.status(500).json({ error: "Failed to trigger script", details: errText });
     }
 
     res.status(200).json({ success: true, message: "脚本已启动！" });
