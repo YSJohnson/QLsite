@@ -87,36 +87,41 @@
     }
 
     buttons.forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = btn.dataset.id;
-        if (id === '0') return setStatus('该任务未配置', 'error');
+    btn.addEventListener('click', async () => {
+    const idStr = btn.dataset.id;
+    if (idStr === '0') return setStatus('该任务未配置', 'error');
 
-        const originalText = btn.textContent;
-        btn.textContent = '执行中...';
-        btn.disabled = true;
+    const taskId = parseInt(idStr, 10); // ← 转成数字
+    if (isNaN(taskId)) return setStatus('无效的任务ID', 'error');
 
-        try {
-          const res = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ taskId: id })
-          });
+    const originalText = btn.textContent;
+    btn.textContent = '执行中...';
+    btn.disabled = true;
 
-          const data = await res.json();
-          if (res.ok && data.success) {
-            setStatus(`✅ ${originalText} 已启动！`, 'success');
-          } else {
-            setStatus(`❌ 失败：${data.error || '未知错误'}`, 'error');
-          }
-        } catch (err) {
-          setStatus('⚠️ 网络错误，请检查控制台', 'error');
-          console.error('Fetch error:', err);
-        } finally {
-          btn.textContent = originalText;
-          btn.disabled = false;
-        }
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ taskId }) // ← 现在是 { taskId: 41 }
       });
-    });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setStatus(`✅ ${originalText} 已启动！`, 'success');
+      } else {
+        setStatus(`❌ 失败：${data.error || '未知错误'}`, 'error');
+      }
+    } catch (err) {
+      setStatus('⚠️ 网络错误，请检查控制台', 'error');
+      console.error('Fetch error:', err);
+    } finally {
+      btn.textContent = originalText;
+      btn.disabled = false;
+    }
+  });
+});
   </script>
 </body>
 </html>
