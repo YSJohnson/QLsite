@@ -21,24 +21,26 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 获取 token
+    // Step 1: 获取 token
     const tokenRes = await fetch(`${QL_HOST}/open/auth/token?client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}`);
-    const { data } = await tokenRes.json();
-    
-    // 触发任务
+    const tokenData = await tokenRes。json();
+    const token = tokenData.data.token;
+
+    // Step 2: 触发任务（正确方式）
     await fetch(`${QL_HOST}/open/crons/run`， {
-      method: 'POST',
+      method: 'POST',  // ✅ 必须是 POST
       headers: {
-        Authorization: `Bearer ${data.token}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ ids: [parseInt(TASK_ID)] })
+      }，
+      body: JSON。stringify({ ids: [TASK_ID] })  // ✅ 正确格式
     });
 
-    res。status(200)。json({ success: true， message: "脚本已启动！" });
+    res。status(200)。json({ success: true, message: "脚本已启动！" });
   } catch (error) {
-    console.error("Error:", error);
-    res。status(500).json({ success: false, message: "执行失败，请检查日志" });
+    console.error("Error:"， error);
+    res.status(500).json({ success: false, message: "执行失败，请检查日志" });
   }
 }
+
 
