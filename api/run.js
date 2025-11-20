@@ -1,5 +1,5 @@
 // api/run.js
-module。exports = async function handler(req， res) {
+module，exports = async function handler(req， res) {
   // ✅ CORS 设置必须在函数内部
   res.setHeader('Access-Control-Allow-Origin', 'https://ysjohnson.top');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
