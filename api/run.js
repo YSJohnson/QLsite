@@ -42,6 +42,7 @@ module.exports = async function handler(req, res) {
 
     // 触发任务：使用 GET 请求 + URL 参数
     const API_PREFIX = '/qinglong'; // 如果有前缀
+    console.log("Triggering task at:", `${QL_HOST}${API_PREFIX}/open/crons/run?id=${TASK_ID}`);
     const runRes = await fetch(`${QL_HOST}${API_PREFIX}/open/crons/run?id=${TASK_ID}`, {
       method: 'GET',
       headers: {
@@ -49,6 +50,8 @@ module.exports = async function handler(req, res) {
         'Content-Type': 'application/json'
       }
     });
+    console.log("Run response status:", runRes.status);
+    console.log("Run response text:", await runRes.text());
 
     if (!runRes.ok) {
       const errText = await runRes.text();
@@ -62,3 +65,4 @@ module.exports = async function handler(req, res) {
     res.status(500).json({ error: "Internal server error", message: error.message });
   }
 };
+
