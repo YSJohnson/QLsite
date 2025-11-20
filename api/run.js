@@ -41,6 +41,8 @@ module.exports = async function handler(req, res) {
     const token = tokenData.data.token;
 
     // 触发任务
+    console.log("Triggering task at:", `${QL_HOST}/open/crons/run`);
+    console.log("With TASK_ID:", TASK_ID);
     const runRes = await fetch(`${QL_HOST}/open/crons/run`, {
       method: 'POST',
       headers: {
@@ -62,3 +64,4 @@ module.exports = async function handler(req, res) {
     res.status(500).json({ error: "Internal server error", message: error.message });
   }
 };
+
