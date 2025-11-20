@@ -1,5 +1,5 @@
 // api/run.js
-module.exports = async function handler(req， res) {
+module。exports = async function handler(req， res) {
   // ✅ CORS 设置必须在函数内部
   res.setHeader('Access-Control-Allow-Origin', 'https://ysjohnson.top');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -17,7 +17,7 @@ module.exports = async function handler(req， res) {
 
     // ✅ 校验环境变量
     if (!QL_HOST || !CLIENT_ID || !CLIENT_SECRET || !TASK_ID) {
-      console。error("Missing env vars:"， { QL_HOST， CLIENT_ID, CLIENT_SECRET， TASK_ID });
+      console.error("Missing env vars:", { QL_HOST, CLIENT_ID, CLIENT_SECRET, TASK_ID });
       return res.status(500).json({ error: "Missing environment variables in Vercel" });
     }
 
@@ -27,14 +27,14 @@ module.exports = async function handler(req， res) {
 
     if (!tokenRes.ok) {
       const text = await tokenRes.text();
-      console。error("Token fetch failed:"， text);
-      return res。status(500)。json({ error: "Failed to get Qinglong token", details: text });
+      console.error("Token fetch failed:"， text);
+      return res.status(500).json({ error: "Failed to get Qinglong token", details: text });
     }
 
     const tokenData = await tokenRes.json();
     if (!tokenData.data?.token) {
-      console。error("Invalid token response:"， tokenData);
-      return res。status(500).json({ error: "Invalid token format from Qinglong" });
+      console.error("Invalid token response:"， tokenData);
+      return res.status(500).json({ error: "Invalid token format from Qinglong" });
     }
 
     const token = tokenData.data.token;
