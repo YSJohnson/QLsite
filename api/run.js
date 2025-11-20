@@ -40,15 +40,15 @@ module.exports = async function handler(req, res) {
 
     const token = tokenData.data.token;
 
-    // 触发任务：使用 GET 请求 + URL 参数
-    console.log("Triggering task at:", `${QL_HOST}${API_PREFIX}/open/crons/run?id=${TASK_ID}`);
-    const runRes = await fetch(`${QL_HOST}${API_PREFIX}/open/crons/run?id=${TASK_ID}`, {
+    // 触发任务：直接使用 /open/crons/run
+    const runRes = await fetch(`${QL_HOST}/open/crons/run?id=${TASK_ID}`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     });
+
     console.log("Run response status:", runRes.status);
     console.log("Run response text:", await runRes.text());
 
@@ -64,5 +64,3 @@ module.exports = async function handler(req, res) {
     res.status(500).json({ error: "Internal server error", message: error.message });
   }
 };
-
-
