@@ -14,55 +14,66 @@ module.exports = async function handler(req, res) {
     const CLIENT_SECRET = process.env.CLIENT_SECRET;
     const TASK_ID = parseInt(process.env.TASK_ID, 10);
 
-    console.log("DEBUG: QL_HOST =", QL_HOST);
-    console.log("DEBUG: TASK_ID =", TASK_ID);
-    console.log("DEBUG: TASK_ID type =", typeof TASK_ID);
+    console.log("✅ QL_HOST:", QL_HOST);
+    console.log("✅ TASK_ID:", TASK_ID, "(type:", typeof TASK_ID, ")");
 
-    if (!QL_HOST || !CLIENT_ID || !CLIENT_SECRET || !TASK_ID) {
-      return res.status(500).json({ error: "Missing environment variables" });
+    if (!QL_HOST || !CLIENT_ID || !CLIENT_SECRET || isNaN(TASK_ID)) {
+      return res.status(500).json({ error: "Missing or invalid environment variables" });
     }
 
-    // 获取 token
+    // Step 1: 获取 token
     const tokenUrl = `${QL_HOST}/open/auth/token?client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}`;
-    const tokenRes = await fetch(tokenUrl);
+    const tokenRes = await fetch(tokenUrl, { method: 'GET' });
 
+    const tokenText = await tokenRes.text();
     if (!tokenRes.ok) {
-      const text = await tokenRes.text();
-      console.error("Token fetch failed:", text);
-      return res.status(500).json({ error: "Failed to get Qinglong token", details: text });
+      console.error("❌ Token fetch failed:", tokenText);
+      return res.status(500).json({ error: "Failed to get token", details: tokenText });
     }
 
-    const tokenData = await tokenRes.json();
-    console.log("DEBUG: Token data:", tokenData);
-
-    if (!tokenData.data?.token) {
-      return res.status(500).json({ error: "Invalid token format" });
+    let tokenData;
+    try {
+      tokenData = JSON.parse(tokenText);
+    } catch (e) {
+      console.error("❌ Invalid token JSON:", tokenText);
+      return res.status(500).json({ error: "Invalid token response" });
     }
 
-    const token = tokenData.data.token;
+    const token = tokenData?.data?.token;
+    if (!token) {
+      return res.status(500).json({ error: "Token not found", response: tokenData });
+    }
 
-    // 触发任务：使用 URLSearchParams 确保参数正确
-    const params = new URLSearchParams({ id: TASK_ID });
-    const runRes = await fetch(`${QL_HOST}/open/crons/run?${params}`, {
-      method: 'GET',
+    // ✅ Step 2: 使用 PUT + JSON 数组 body（新版青龙要求！）
+    const runUrl = `${QL_HOST}/open/crons/run`;
+    console.log("🚀 Sending PUT request to:", runUrl);
+    console.log("📦 Body payload:", [TASK_ID]);
+
+    const runRes = await fetch(runUrl, {
+      method: 'PUT',
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json'
-      }
+      },
+      body: JSON.stringify([TASK_ID]) // ← 关键：传 [41]，不是 {id:41}，也不是 URL 参数
     });
 
-    console.log("Run response status:", runRes.status);
-    console.log("Run response text:", await runRes.text());
+    const runBody = await runRes.text();
+    console.log("📡 Status:", runRes.status);
+    console.log("📄 Response:", runBody);
 
     if (!runRes.ok) {
-      const errText = await runRes.text();
-      console.error("Run task failed:", errText);
-      return res.status(500).json({ error: "Failed to trigger script", details: errText });
+      return res.status(500).json({
+        error: "Failed to trigger script",
+        status: runRes.status,
+        body: runBody
+      });
     }
 
-    res.status(200).json({ success: true, message: "脚本已启动！" });
+    res.status(200).json({ success: true, message: "脚本已成功启动！" });
+
   } catch (error) {
-    console.error("Unhandled error:", error.message);
+    console.error("💥 Fatal error:", error.message);
     res.status(500).json({ error: "Internal server error", message: error.message });
   }
 };
