@@ -12,7 +12,7 @@ module.exports = async function handler(req, res) {
     const QL_HOST = process.env.QL_HOST;
     const CLIENT_ID = process.env.CLIENT_ID;
     const CLIENT_SECRET = process.env.CLIENT_SECRET;
-    const TASK_ID = parseInt(process.env.TASK_ID, 10); // ← 确保是数字
+    const TASK_ID = parseInt(process.env.TASK_ID, 10);
 
     console.log("DEBUG: QL_HOST =", QL_HOST);
     console.log("DEBUG: TASK_ID =", TASK_ID);
@@ -41,7 +41,7 @@ module.exports = async function handler(req, res) {
 
     const token = tokenData.data.token;
 
-    // 触发任务：使用 GET 请求 + URL 参数
+    // 触发任务
     const runRes = await fetch(`${QL_HOST}/open/crons/run?id=${TASK_ID}`, {
       method: 'GET',
       headers: {
@@ -54,9 +54,9 @@ module.exports = async function handler(req, res) {
     console.log("Run response text:", await runRes.text());
 
     if (!runRes.ok) {
-      const errText = await runRes.text();
+      const errText = await runRes.text(); // ← 确保这是个变量
       console.error("Run task failed:", errText);
-      return res.status(500).json({ error: "Failed to trigger script", details: err Text });
+      return res.status(500).json({ error: "Failed to trigger script", details: errText }); // ← 修正这里！
     }
 
     res.status(200).json({ success: true, message: "脚本已启动！" });
