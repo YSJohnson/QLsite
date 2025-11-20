@@ -55,8 +55,6 @@ export default async function handler(req, res) {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
-      console.log('Raw body:', req.body);
-      console.log('Parsed body:', body);
       body: JSON.stringify([TASK_ID_NUM]) // 注意：是数组！
     });
 
@@ -69,4 +67,5 @@ export default async function handler(req, res) {
     res.status(500).json({ error: 'Server error', details: err.message });
   }
 }
+
 
