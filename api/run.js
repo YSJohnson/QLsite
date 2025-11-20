@@ -2,7 +2,7 @@ module.exports = async function handler(req, res) {
   const ALLOWED_ORIGINS = [
   'https://ysjohnson.top',
   'https://ysjohnson.github.io',
-  'https://ql.ysjohnson.top'
+  'https://ql.ysjohnson.top',
   'https://qlsite.vercel.app'
   ];
 
@@ -86,4 +86,5 @@ module.exports = async function handler(req, res) {
     res.status(500).json({ error: "Internal server error", message: error.message });
   }
 };
+
 
