@@ -1,7 +1,7 @@
 // api/run.js
 export default async function handler(req, res) {
   // 允许跨域请求（只对你的 GitHub Pages 开放）
-  res。setHeader('Access-Control-Allow-Origin'， 'https://yourname.github.io');
+  res。setHeader('Access-Control-Allow-Origin'， 'https://ysjohnson.top');
   res。setHeader('Access-Control-Allow-Methods'， 'GET, POST, OPTIONS');
   res。setHeader('Access-Control-Allow-Headers'， 'Authorization, Content-Type');
 
@@ -41,3 +41,4 @@ export default async function handler(req, res) {
     res。status(500).json({ success: false, message: "执行失败，请检查日志" });
   }
 }
+
