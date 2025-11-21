@@ -12,6 +12,7 @@
       --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
       --card-bg: rgba(255, 255, 255, 0.95);
       --text-main: #333;
+      --text-secondary: #666; /* 新增次要文字颜色 */
       --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     }
 
@@ -37,7 +38,7 @@
       max-width: 400px;
       text-align: center;
       transition: transform 0.3s ease;
-      backdrop-filter: blur(10px); /* 毛玻璃效果 */
+      backdrop-filter: blur(10px);
     }
 
     .container:hover {
@@ -87,19 +88,26 @@
       box-shadow: none;
     }
 
+    /* 新增：提示语样式 */
+    .tips {
+      margin-top: 15px;
+      margin-bottom: 0;
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
     /* 结果展示区域 */
     #result {
-      margin-top: 25px;
+      margin-top: 20px;
       min-height: 24px;
       font-size: 15px;
       line-height: 1.6;
       border-radius: 8px;
       padding: 10px;
-      /* 当有内容时，可以添加淡入动画 */
       transition: all 0.3s;
     }
     
-    /* 针对脚本注入的span进行样式微调，使其更易读 */
     #result span {
       display: inline-block;
       padding: 8px 12px;
@@ -108,7 +116,6 @@
       font-weight: 500;
     }
 
-    /* 移动端适配微调 */
     @media (max-width: 480px) {
       .container {
         padding: 30px 20px;
@@ -121,8 +128,12 @@
 </head>
 <body>
   <div class="container">
-    <h1>🚀 一键运行签到脚本</h1>
+    <h1>🚀 一键运行恰恰阅读脚本</h1>
+    
     <button onclick="runScript()">立即运行</button>
+    
+    <p class="tips">按一次就行 等待最多一分钟机器人就会有推送<br>没有推送请叫我查看情况 有的时候可能卡了</p>
+    
     <div id="result"></div>
   </div>
 
@@ -131,19 +142,15 @@
       const btn = document.querySelector('button');
       const resultDiv = document.getElementById('result');
       
-      // UI 状态更新
       btn.disabled = true;
       btn.textContent = '运行中...';
-      // 添加透明度变化，使重置过程更平滑
       resultDiv.style.opacity = '0.5';
       resultDiv.innerText = '';
 
       try {
-        // 调用你的 Vercel 函数
         const response = await fetch('https://ql.ysjohnson.top/api/run');
         const data = await response.json();
         
-        // 恢复透明度
         resultDiv.style.opacity = '1';
 
         if (data.success) {
