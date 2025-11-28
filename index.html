@@ -144,35 +144,25 @@
 
     <p class="notice">
       点击下方按钮即可启动脚本。<br>
-      任务运行后，日志将实时显示在下方区域。
+      日志将实时显示在下方区域。
     </p>
 
     <div class="glass-card">
       <button id="runBtn" class="btn">立即运行</button>
-      <div class="loading" id="loading">正在检查任务状态…</div>
+      <div class="loading" id="loading">正在触发任务…</div>
       <pre id="log"></pre>
     </div>
   </div>
 
   <script>
-    // ✅ 请务必替换成你自己的 Vercel 部署地址
+    // ✅ 替换为你的 Vercel 地址
     const API_BASE = 'https://qlsite.vercel.app';
 
     let logInterval = null;
-    let isTaskRunning = false;
+    let lastLogContent = '';
+    let unchangedCount = 0; // 日志未变化次数
 
-    async function checkIfRunning() {
-      try {
-        const res = await fetch(`${API_BASE}/api/task-status`);
-        if (!res.ok) return false;
-        const data = await res.json();
-        return Boolean(data?.running);
-      } catch (err) {
-        console.warn('检查任务状态失败:', err);
-        return false;
-      }
-    }
-
+    // 获取日志
     async function fetchLog() {
       try {
         const res = await fetch(`${API_BASE}/api/run`, { method: 'POST' });
@@ -183,6 +173,7 @@
       }
     }
 
+    // 安全格式化日志
     function formatLog(text) {
       if (typeof text !== 'string') text = String(text);
       const escaped = text
@@ -194,17 +185,31 @@
       return escaped.replace(/\n/g, '<br>');
     }
 
-    function updateButtonState(running) {
-      const btn = document.getElementById('runBtn');
-      if (running) {
-        btn.disabled = true;
-        btn.textContent = '任务运行中…';
-      } else {
-        btn.disabled = false;
-        btn.textContent = '立即运行';
-      }
+    // 判断日志是否表示任务已完成
+    function isTaskFinished(log) {
+      const endKeywords = [
+        '运行完成',
+        '执行完毕',
+        'Exit',
+        'success',
+        'finished',
+        '结束',
+        'completed',
+        '✅',
+        '任务成功'
+      ];
+      const lowerLog = log.toLowerCase();
+      return endKeywords.some(kw => lowerLog.includes(kw.toLowerCase()));
     }
 
+    // 更新按钮状态
+    function updateButtonState(disabled) {
+      const btn = document.getElementById('runBtn');
+      btn.disabled = disabled;
+      btn.textContent = disabled ? '任务运行中…' : '立即运行';
+    }
+
+    // 停止自动刷新
     function stopAutoRefresh() {
       if (logInterval) {
         clearInterval(logInterval);
@@ -212,30 +217,37 @@
       }
     }
 
-    async function startAutoRefresh() {
+    // 启动日志自动刷新（每5秒）
+    function startAutoRefresh() {
       stopAutoRefresh();
 
       logInterval = setInterval(async () => {
-        const stillRunning = await checkIfRunning();
-        if (!stillRunning) {
-          stopAutoRefresh();
-          isTaskRunning = false;
-          updateButtonState(false);
-          const logEl = document.getElementById('log');
-          if (!logEl.innerHTML.includes('✅ 任务已完成')) {
-            logEl.innerHTML += '<br><br>✅ 任务已完成';
+        const rawLog = await fetchLog();
+        const logEl = document.getElementById('log');
+
+        // 如果日志和上次一样
+        if (rawLog === lastLogContent) {
+          unchangedCount++;
+          // 如果连续3次没变，且包含结束词 → 认为完成
+          if (unchangedCount >= 3 && isTaskFinished(rawLog)) {
+            stopAutoRefresh();
+            updateButtonState(false);
+            if (!logEl.innerHTML.includes('✅ 任务已完成')) {
+              logEl.innerHTML += '<br><br>✅ 任务已完成';
+            }
+            return;
           }
-          return;
+        } else {
+          // 日志变了，重置计数
+          unchangedCount = 0;
+          lastLogContent = rawLog;
         }
 
-        const rawLog = await fetchLog();
-        document.getElementById('log').innerHTML = formatLog(rawLog);
+        logEl.innerHTML = formatLog(rawLog);
       }, 5000);
     }
 
-    // ======================
-    // 核心：带进度提示的任务启动
-    // ======================
+    // 运行任务（简化版：直接开始刷日志）
     async function runTask() {
       const btn = document.getElementById('runBtn');
       const loadingEl = document.getElementById('loading');
@@ -246,69 +258,36 @@
       logEl.style.display = 'none';
 
       try {
-        const triggerRes = await fetch(`${API_BASE}/api/run`, { method: 'POST' });
-        const triggerData = await triggerRes.json();
+        // 触发任务
+        const res = await fetch(`${API_BASE}/api/run`, { method: 'POST' });
+        const data = await res.json();
 
-        if (!triggerData.success) {
-          throw new Error(triggerData.error || '触发任务失败');
+        if (!data.success) {
+          throw new Error(data.error || '触发失败');
         }
 
+        // 立即开始刷新日志（不等状态）
+        lastLogContent = '';
+        unchangedCount = 0;
+        logEl.innerHTML = '任务已触发，正在加载日志…';
         logEl.style.display = 'block';
-        logEl.innerHTML = '正在启动任务，请稍候…';
-
-        let running = false;
-        let attempt = 0;
-        const maxAttempts = 15;
-
-        while (attempt < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          running = await checkIfRunning();
-          attempt++;
-
-          if (running) {
-            break;
-          }
-
-          logEl.innerHTML = `正在启动任务…（第 ${attempt} 次检查，共最多 ${maxAttempts} 次）`;
-        }
-
-        if (running) {
-          isTaskRunning = true;
-          updateButtonState(true);
-          startAutoRefresh();
-          logEl.innerHTML = '任务已成功启动，正在加载日志…';
-        } else {
-          throw new Error('任务启动超时，可能已在后台运行但状态未同步');
-        }
+        updateButtonState(true);
+        startAutoRefresh();
       } catch (err) {
-        console.error('Run task error:', err);
-        document.getElementById('log').innerHTML = `⚠️ ${err.message}`;
-        document.getElementById('log').style.display = 'block';
+        console.error('Run error:', err);
+        logEl.innerHTML = `⚠️ ${err.message}`;
+        logEl.style.display = 'block';
         updateButtonState(false);
       } finally {
         loadingEl.style.display = 'none';
       }
     }
 
-    async function initPage() {
-      const loadingEl = document.getElementById('loading');
+    // 初始化
+    function initPage() {
       const logEl = document.getElementById('log');
-
-      loadingEl.style.display = 'block';
-      isTaskRunning = await checkIfRunning();
-
-      if (isTaskRunning) {
-        logEl.innerHTML = '检测到任务正在运行，正在加载日志…';
-        logEl.style.display = 'block';
-        updateButtonState(true);
-        startAutoRefresh();
-      } else {
-        logEl.innerHTML = '任务未运行。点击“立即运行”以启动。';
-        logEl.style.display = 'block';
-        updateButtonState(false);
-      }
-
-      loadingEl.style.display = 'none';
+      logEl.innerHTML = '任务未运行。点击“立即运行”以启动。';
+      logEl.style.display = 'block';
     }
 
     document.addEventListener('DOMContentLoaded', () => {
