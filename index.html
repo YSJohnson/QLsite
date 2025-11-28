@@ -6,7 +6,6 @@
   <title>恰恰阅读 · 一键运行</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    /* ====== 保持你之前设计的玻璃拟态样式不变 ====== */
     * {
       margin: 0;
       padding: 0;
@@ -118,6 +117,7 @@
       box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.05);
     }
 
+    /* 滚动条美化 */
     #log::-webkit-scrollbar {
       width: 6px;
     }
@@ -156,13 +156,12 @@
   </div>
 
   <script>
-    // ✅ 前端不接触 TASK_ID，所有逻辑由后端处理
-
-    const API_BASE = 'https://qlsite.vercel.app'; // 👈 替换为你的 Vercel URL
+    // ✅ 替换为你自己的 Vercel 部署域名
+    const API_BASE = 'https://qlsite.vercel.app';
 
     let logInterval = null;
 
-    // 获取最新日志
+    // 获取日志（调用 run 接口）
     async function fetchLog() {
       try {
         const res = await fetch(`${API_BASE}/api/run`, { method: 'POST' });
@@ -185,25 +184,42 @@
       }
     }
 
-    // 开始自动刷新日志（每 5 秒）
-    function startAutoRefresh() {
-      clearInterval(logInterval);
-      logInterval = setInterval(async () => {
-        const logText = await fetchLog();
-        document.getElementById('log').textContent = logText;
-      }, 5000);
+    // 将 \n 转为 <br>，并转义 HTML 特殊字符（防 XSS）
+    function formatLog(text) {
+      if (typeof text !== 'string') text = String(text);
+      // 先转义 HTML
+      const escaped = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+      // 再将 \n 转为 <br>
+      return escaped.replace(/\n/g, '<br>');
     }
 
-    // 停止自动刷新
+    // 更新日志显示
+    async function updateLog() {
+      const rawLog = await fetchLog();
+      const formattedLog = formatLog(rawLog);
+      document.getElementById('log').innerHTML = formattedLog;
+    }
+
+    // 启动自动刷新
+    function startAutoRefresh() {
+      clearInterval(logInterval);
+      logInterval = setInterval(updateLog, 5000); // 每5秒刷新
+    }
+
+    // 停止自动刷新（可选）
     function stopAutoRefresh() {
       clearInterval(logInterval);
     }
 
-    // 页面加载时初始化
+    // 页面加载完成
     document.addEventListener('DOMContentLoaded', async () => {
       const loadingEl = document.getElementById('loading');
       const logEl = document.getElementById('log');
-      const btn = document.getElementById('runBtn');
 
       loadingEl.style.display = 'block';
 
@@ -211,18 +227,18 @@
       const isRunning = await checkIfRunning();
 
       if (isRunning) {
-        logEl.textContent = '检测到任务正在运行，正在加载日志…';
+        logEl.innerHTML = '检测到任务正在运行，正在加载日志…';
         logEl.style.display = 'block';
         startAutoRefresh();
       } else {
-        logEl.textContent = '任务未运行。点击“立即运行”以启动。';
+        logEl.innerHTML = '任务未运行。点击“立即运行”以启动。';
         logEl.style.display = 'block';
       }
 
       loadingEl.style.display = 'none';
     });
 
-    // 按钮点击事件
+    // 运行按钮点击事件
     document.getElementById('runBtn').addEventListener('click', async () => {
       const btn = document.getElementById('runBtn');
       const loadingEl = document.getElementById('loading');
@@ -237,15 +253,15 @@
         const data = await res.json();
 
         if (data.success) {
-          logEl.textContent = '任务已启动，正在加载日志…';
+          logEl.innerHTML = '任务已启动，正在加载日志…';
           logEl.style.display = 'block';
-          startAutoRefresh(); // 启动自动刷新
+          startAutoRefresh();
         } else {
-          logEl.textContent = `❌ 错误: ${data.error || '未知错误'}`;
+          logEl.innerHTML = `❌ 错误: ${data.error || '未知错误'}`;
           logEl.style.display = 'block';
         }
       } catch (err) {
-        logEl.textContent = `⚠️ 请求失败: ${err.message}`;
+        logEl.innerHTML = `⚠️ 请求失败: ${err.message}`;
         logEl.style.display = 'block';
       } finally {
         btn.disabled = false;
