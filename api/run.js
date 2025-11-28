@@ -1,14 +1,14 @@
 module.exports = async function handler(req, res) {
   const ALLOWED_ORIGINS = [
-  'https://ysjohnson.top',
-  'https://ysjohnson.github.io',
-  'https://ql.ysjohnson.top',
-  'https://qlsite.vercel.app'
+    'https://ysjohnson.top',
+    'https://ysjohnson.github.io',
+    'https://ql.ysjohnson.top',
+    'https://qlsite.vercel.app'
   ];
 
   const origin = req.headers.origin;
   if (ALLOWED_ORIGINS.includes(origin)) {
-  res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Origin', origin);
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
@@ -33,8 +33,8 @@ module.exports = async function handler(req, res) {
     // Step 1: 获取 token
     const tokenUrl = `${QL_HOST}/open/auth/token?client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}`;
     const tokenRes = await fetch(tokenUrl, { method: 'GET' });
-
     const tokenText = await tokenRes.text();
+
     if (!tokenRes.ok) {
       console.error("❌ Token fetch failed:", tokenText);
       return res.status(500).json({ error: "Failed to get token", details: tokenText });
@@ -53,7 +53,9 @@ module.exports = async function handler(req, res) {
       return res.status(500).json({ error: "Token not found", response: tokenData });
     }
 
-    // ✅ Step 2: 使用 PUT + JSON 数组 body（新版青龙要求！）
+    const authHeader = { Authorization: `Bearer ${token}` };
+
+    // Step 2: 触发任务运行
     const runUrl = `${QL_HOST}/open/crons/run`;
     console.log("🚀 Sending PUT request to:", runUrl);
     console.log("📦 Body payload:", [TASK_ID]);
@@ -61,30 +63,49 @@ module.exports = async function handler(req, res) {
     const runRes = await fetch(runUrl, {
       method: 'PUT',
       headers: {
-        Authorization: `Bearer ${token}`,
+        ...authHeader,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify([TASK_ID]) // ← 关键：传 [41]，不是 {id:41}，也不是 URL 参数
+      body: JSON.stringify([TASK_ID])
     });
 
     const runBody = await runRes.text();
-    console.log("📡 Status:", runRes.status);
-    console.log("📄 Response:", runBody);
+    console.log("📡 Run Status:", runRes.status);
+    console.log("📄 Run Response:", runBody);
 
     if (!runRes.ok) {
-      return res.status(500).json({
-        error: "Failed to trigger script",
-        status: runRes.status,
-        body: runBody
-      });
+      return res.status(500).json({ error: "Failed to trigger script", status: runRes.status, body: runBody });
     }
 
-    res.status(200).json({ success: true, message: "脚本已成功启动！" });
+    // Step 3: 等待几秒，让任务开始并生成日志
+    await new Promise(resolve => setTimeout(resolve, 4000)); // 等待 4 秒
+
+    // Step 4: 获取任务日志
+    const logUrl = `${QL_HOST}/open/crons/${TASK_ID}/log`;
+    console.log("📥 Fetching log from:", logUrl);
+
+    const logRes = await fetch(logUrl, {
+      method: 'GET',
+      headers: authHeader
+    });
+
+    let logContent = '';
+    if (logRes.ok) {
+      logContent = await logRes.text();
+    } else {
+      console.warn("⚠️ Failed to fetch log, status:", logRes.status);
+      logContent = "[日志获取失败，请稍后重试或检查青龙面板]";
+    }
+
+    // 返回成功 + 日志
+    res.status(200).json({
+      success: true,
+      message: "脚本已成功启动！",
+      log: logContent
+    });
 
   } catch (error) {
     console.error("💥 Fatal error:", error.message);
     res.status(500).json({ error: "Internal server error", message: error.message });
   }
 };
-
-
